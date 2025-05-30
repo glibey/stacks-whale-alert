@@ -73,4 +73,4 @@ const fetchTransfers = async () => {
   }
 };
 
-setInterval(fetchTransfers, 10 * 60 * 1000);
+setInterval(fetchTransfers, 300000);
