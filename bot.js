@@ -11,7 +11,7 @@ const twitterClient = new TwitterApi({
 });
 
 // Whale threshold
-const MIN_WHALE_AMOUNT = 100; // STX
+const MIN_WHALE_AMOUNT = 10000; // STX
 
 // Stacks API endpoint
 const STACKS_API_URL = 'https://api.hiro.so/extended/v1/tx?unanchored=true&sort=desc';
@@ -60,7 +60,7 @@ const fetchTransfers = async () => {
         const toAddress = tx?.token_transfer?.recipient_address;
         const usdAmount = price ? amountStx * price: '-';
         const tweetText = `🐳 Whale Alert! 🚨 \n\n` +
-                          `#Stacks #STX Transfer: ${Number(amountStx).toFixed(2)} STX ($${Number(usdAmount).toFixed(2)})\n` +
+                          `#Stacks #STX Transfer: ${Number(amountStx).toFixed(2)} STX ($${usdAmount})\n` +
                           `Tx: https://explorer.stacks.co/txid/${txId}`;
 
         await twitterClient.v2.tweet(tweetText);
