@@ -11,7 +11,7 @@ const twitterClient = new TwitterApi({
 });
 
 // Whale threshold
-const MIN_WHALE_AMOUNT = 50000; // STX
+const MIN_WHALE_AMOUNT = 100; // STX
 
 // Stacks API endpoint
 const STACKS_API_URL = 'https://api.hiro.so/extended/v1/tx?unanchored=true&sort=desc';
