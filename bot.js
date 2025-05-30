@@ -11,7 +11,7 @@ const twitterClient = new TwitterApi({
 });
 
 // Whale threshold
-const MIN_WHALE_AMOUNT = 10000; // STX
+const MIN_WHALE_AMOUNT = 5000; // STX
 
 // Stacks API endpoint
 const STACKS_API_URL = 'https://api.hiro.so/extended/v1/tx?unanchored=true&sort=desc';
@@ -24,7 +24,7 @@ let lastFetched = 0;
 
 const getCachedStxPrice = async () => {
   const now = Date.now();
-  if (!cachedPrice || now - lastFetched > 60_000) {
+  if (!cachedPrice || now - lastFetched > 1_300_000) { // 30 minutes
     cachedPrice = await getStxPrice();
     lastFetched = now;
   }
@@ -73,4 +73,4 @@ const fetchTransfers = async () => {
   }
 };
 
-setInterval(fetchTransfers, 300000);
+setInterval(fetchTransfers, 600000);
