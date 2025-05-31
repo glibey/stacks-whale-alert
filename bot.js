@@ -11,7 +11,7 @@ const twitterClient = new TwitterApi({
 });
 
 // Whale threshold
-const MIN_WHALE_AMOUNT = 5000; // STX
+const MIN_WHALE_AMOUNT = 10000; // STX
 
 // Stacks API endpoint
 const STACKS_API_URL = 'https://api.hiro.so/extended/v1/tx?unanchored=true&sort=desc';
@@ -64,6 +64,7 @@ const fetchTransfers = async () => {
                           `Tx: https://explorer.stacks.co/txid/${txId}`;
 
         await twitterClient.v2.tweet(tweetText);
+        console.log(tweetText);
       }
 
       seenTx.add(txId);
