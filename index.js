@@ -1,10 +1,10 @@
-const express = require('express');
-const app = express();
+import express from 'express';
 import axios from 'axios';
 import 'dotenv/config';
 import { TwitterApi } from 'twitter-api-v2';
 
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3000;
+const app = express();
 
 // Twitter API setup
 const twitterClient = new TwitterApi({
