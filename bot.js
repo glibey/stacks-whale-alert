@@ -33,6 +33,7 @@ const getCachedStxPrice = async () => {
 
 const getStxPrice = async () => {
   try {
+    console.log('Fetching STX price from CoinGecko...');
     const { data } = await axios.get(
       'https://api.coingecko.com/api/v3/simple/price',
       { params: { ids: 'blockstack', vs_currencies: 'usd' } }
@@ -46,6 +47,7 @@ const getStxPrice = async () => {
 
 const fetchTransfers = async () => {
   try {
+    console.log('Fetching latest STX transactions...');
     const { data } = await axios.get(`${STACKS_API_URL}?limit=50`);
     const transactions = data.results || [];
     for (const tx of transactions) {
@@ -69,6 +71,7 @@ const fetchTransfers = async () => {
 
       seenTx.add(txId);
     }
+    console.log(`Stacks Whale Alert started.`);
   } catch (err) {
     console.error('Error fetching or posting:', err);
   }
