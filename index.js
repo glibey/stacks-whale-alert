@@ -83,6 +83,8 @@ const fetchTransfers = async () => {
 
 setInterval(fetchTransfers, 600000);
 
+fetchTransfers();
+
 app.get('/', (req, res) => {
   res.send('Service is running.');
 });
