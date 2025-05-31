@@ -66,7 +66,7 @@ const fetchTransfers = async () => {
         const toAddress = tx?.token_transfer?.recipient_address;
         const usdAmount = price ? amountStx * price: '-';
         const tweetText = `🐳 Whale Alert! 🚨 \n\n` +
-                          `#Stacks #STX Transfer: ${Number(amountStx).toFixed(2)} STX ($${usdAmount})\n` +
+                          `#Stacks #STX Transfer: ${Number(amountStx).toFixed(2)} STX ($${(usdAmount === '-') ? '-' : Number(usdAmount).toFixed(2)})\n` +
                           `Tx: https://explorer.stacks.co/txid/${txId}`;
 
         await twitterClient.v2.tweet(tweetText);
