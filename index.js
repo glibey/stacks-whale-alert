@@ -15,7 +15,7 @@ const twitterClient = new TwitterApi({
 });
 
 // Whale threshold
-const MIN_WHALE_AMOUNT = 10000; // STX
+const MIN_WHALE_AMOUNT = 10; // STX
 
 // Stacks API endpoint
 const STACKS_API_URL = 'https://api.hiro.so/extended/v1/tx?unanchored=true&sort=desc';
@@ -45,7 +45,7 @@ const getStxPrice = async () => {
         }
       }
     );
-    console.log('STX price' = (data?.data?.STX?.find(o => o.slug === 'stacks' && o.symbol === 'STX'))?.quote?.USD?.price);
+    console.log('STX price =' + (data?.data?.STX?.find(o => o.slug === 'stacks' && o.symbol === 'STX'))?.quote?.USD?.price);
     return (data?.data?.STX?.find(o => o.slug === 'stacks' && o.symbol === 'STX'))?.quote?.USD?.price || null;
   } catch (error) {
     console.error('Error fetching STX price:', error.message);
@@ -58,7 +58,7 @@ const fetchTransfers = async () => {
     console.log('Fetching latest STX transactions...');
     const { data } = await axios.get(`${STACKS_API_URL}?limit=50`);
     const transactions = data.results || [];
-            const price = await getCachedStxPrice();
+
     for (const tx of transactions) {
       const txId = tx.tx_id;
       if (seenTx.has(txId)) continue;
