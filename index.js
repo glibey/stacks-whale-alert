@@ -39,10 +39,13 @@ const getStxPrice = async () => {
   try {
     console.log('Fetching STX price from CoinGecko...');
     const { data } = await axios.get(
-      'https://api.coingecko.com/api/v3/simple/price',
-      { params: { ids: 'blockstack', vs_currencies: 'usd' } }
+      'https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=STX', {
+        headers: {
+          'X-CMC_PRO_API_KEY': process.env.COINMARKETCAP_API_KEY
+        }
+      }
     );
-    return data?.blockstack?.usd || null;
+    return data?.quote?.USD?.price || null;
   } catch (error) {
     console.error('Error fetching STX price:', error.message);
     return null;
@@ -69,7 +72,7 @@ const fetchTransfers = async () => {
                           `#Stacks #STX Transfer: ${Number(amountStx).toFixed(2)} STX ($${(usdAmount === '-') ? '-' : Number(usdAmount).toFixed(2)})\n` +
                           `Tx: https://explorer.stacks.co/txid/${txId}`;
 
-        await twitterClient.v2.tweet(tweetText);
+        // await twitterClient.v2.tweet(tweetText);
         console.log(tweetText);
       }
 
