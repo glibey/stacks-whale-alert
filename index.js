@@ -74,7 +74,7 @@ const fetchTransfers = async () => {
                           `#Stacks #STX Transfer: ${Number(amountStx).toFixed(2)} STX ($${(usdAmount === '-') ? '-' : Number(usdAmount).toFixed(2)})\n` +
                           `Tx: https://explorer.stacks.co/txid/${txId}`;
 
-        // await twitterClient.v2.tweet(tweetText);
+        await twitterClient.v2.tweet(tweetText);
         console.log(tweetText);
       }
 
