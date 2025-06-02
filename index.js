@@ -81,7 +81,6 @@ const processTransaction = async (tx) => {
 const fetchTransfers = async () => {
   try {
     console.log('Fetching latest STX transactions...');
-    console.log(`${STACKS_API_URL}&limit=50`);
     const { data } = await axios.get(`${STACKS_API_URL}&limit=50`);
     const transactions = data.results || [];
     await Promise.all(transactions.map(processTransaction));
