@@ -1,10 +1,7 @@
-import express from 'express';
 import axios from 'axios';
 import 'dotenv/config';
 import { TwitterApi } from 'twitter-api-v2';
 
-const PORT = process.env.PORT || 3000;
-const app = express();
 
 // Twitter API
 const twitterClient = new TwitterApi({
@@ -66,6 +63,8 @@ const processTransaction = async (tx) => {
 
   const amountStx = (tx?.token_transfer?.amount || 0) / 1e6;
 
+  console.log(`Processing transaction ${txId}: ${amountStx} STX`);
+
   if (amountStx >= MIN_WHALE_AMOUNT) {
     const price = await getCachedStxPrice();
     const usdAmount = price ? (amountStx * price).toFixed(2) : '-';
@@ -84,6 +83,7 @@ const processTransaction = async (tx) => {
 const fetchTransfers = async () => {
   try {
     console.log('Fetching latest STX transactions...');
+    console.log(`${STACKS_API_URL}&limit=50`);
     const { data } = await axios.get(`${STACKS_API_URL}&limit=50`);
     const transactions = data.results || [];
     await Promise.all(transactions.map(processTransaction));
@@ -91,16 +91,6 @@ const fetchTransfers = async () => {
     console.error('Error fetching transactions:', err.message);
   }
 };
-
-// Service status
-app.get('/', (req, res) => {
-  res.send('Stacks Whale Alert Service is running.');
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server is listening on port ${PORT}`);
-});
 
 // Scheduler
 (async () => {
