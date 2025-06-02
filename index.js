@@ -45,7 +45,8 @@ const getStxPrice = async () => {
         }
       }
     );
-    return data?.quote?.USD?.price || null;
+    console.log('STX price' = (data?.data?.STX?.find(o => o.slug === 'stacks' && o.symbol === 'STX'))?.quote?.USD?.price);
+    return (data?.data?.STX?.find(o => o.slug === 'stacks' && o.symbol === 'STX'))?.quote?.USD?.price || null;
   } catch (error) {
     console.error('Error fetching STX price:', error.message);
     return null;
@@ -57,6 +58,7 @@ const fetchTransfers = async () => {
     console.log('Fetching latest STX transactions...');
     const { data } = await axios.get(`${STACKS_API_URL}?limit=50`);
     const transactions = data.results || [];
+            const price = await getCachedStxPrice();
     for (const tx of transactions) {
       const txId = tx.tx_id;
       if (seenTx.has(txId)) continue;
