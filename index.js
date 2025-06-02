@@ -12,7 +12,7 @@ const twitterClient = new TwitterApi({
 });
 
 // Whale threshold
-const MIN_WHALE_AMOUNT = 100; // STX
+const MIN_WHALE_AMOUNT = 10000; // STX
 
 // APIs
 const STACKS_API_URL = 'https://api.hiro.so/extended/v1/tx?unanchored=true&sort=desc';
@@ -62,8 +62,6 @@ const processTransaction = async (tx) => {
   if (seenTx.has(txId)) return;
 
   const amountStx = (tx?.token_transfer?.amount || 0) / 1e6;
-
-  console.log(`Processing transaction ${txId}: ${amountStx} STX`);
 
   if (amountStx >= MIN_WHALE_AMOUNT) {
     const price = await getCachedStxPrice();
