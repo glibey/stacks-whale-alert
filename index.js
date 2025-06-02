@@ -2,7 +2,6 @@ import axios from 'axios';
 import 'dotenv/config';
 import { TwitterApi } from 'twitter-api-v2';
 
-
 // Twitter API
 const twitterClient = new TwitterApi({
   appKey: process.env.TWITTER_API_KEY,
@@ -57,6 +56,33 @@ const getCachedStxPrice = async () => {
   return cachedPrice;
 };
 
+const sendTwitterAndTelegram = async (message) => {
+  // Twitter
+  try {
+    await twitterClient.v2.tweet(message);
+    console.log(message);
+  } catch (err) {
+    console.error('Error posting tweet:', err.message);
+  }
+
+  // Telegram
+  if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+    try {
+      const telegramApiUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+      await axios.post(telegramApiUrl, {
+        chat_id: TELEGRAM_CHAT_ID,
+        text: message,
+        parse_mode: 'Markdown',
+      });
+      console.log('Sent Telegram message');
+    } catch (err) {
+      console.error('Error posting Telegram message:', err.message);
+    }
+  } else {
+    console.warn('Telegram credentials not configured.');
+  }
+};
+
 const processTransaction = async (tx) => {
   const txId = tx.tx_id;
   if (seenTx.has(txId)) return;
@@ -66,13 +92,9 @@ const processTransaction = async (tx) => {
   if (amountStx >= MIN_WHALE_AMOUNT) {
     const price = await getCachedStxPrice();
     const usdAmount = price ? (amountStx * price).toFixed(2) : '-';
-    const tweetText = `🐳 Whale Alert! 🚨\n\n#Stacks #STX Transfer: ${amountStx.toFixed(2)} STX ($${usdAmount})\nTx: https://explorer.stacks.co/txid/${txId}`;
-    try {
-      await twitterClient.v2.tweet(tweetText);
-      console.log(`Tweeted: ${tweetText}`);
-    } catch (err) {
-      console.error('Error posting tweet:', err.message);
-    }
+    const message = `🐳 Whale Alert! 🚨\n\n#Stacks #STX Transfer: ${amountStx.toFixed(2)} STX ($${usdAmount})\nTx: https://explorer.stacks.co/txid/${txId}`;
+
+    await sendTwitterAndTelegram(message);
   }
 
   seenTx.add(txId);
