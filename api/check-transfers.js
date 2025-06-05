@@ -14,7 +14,7 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 // Whale threshold
-const MIN_WHALE_AMOUNT = 100; // STX
+const MIN_WHALE_AMOUNT = 100000; // STX
 
 // APIs
 const STACKS_API_URL = 'https://api.hiro.so/extended/v1/tx?unanchored=true&sort=desc';
