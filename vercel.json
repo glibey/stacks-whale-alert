@@ -1,7 +1,8 @@
 {
   "functions": {
     "api/check-transfers.js": {
-      "schedule": "*/10 * * * *"
+      "memory": 1024,
+      "maxDuration": 60
     }
   }
 }
