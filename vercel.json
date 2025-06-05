@@ -1,8 +1,6 @@
 {
-  "functions": {
-    "api/check-transfers.js": {
-      "memory": 1024,
-      "maxDuration": 60
-    }
-  }
+  "crons": [{
+    "path": "/api/check-transfers",
+    "schedule": "0 10 * * *"
+  }]
 }
