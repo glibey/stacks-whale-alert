@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/check-transfers.js": {
+      "schedule": "*/10 * * * *"
+    }
+  }
+}
