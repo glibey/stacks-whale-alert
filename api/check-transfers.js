@@ -104,7 +104,8 @@ const processTransaction = async (tx) => {
   if (amountStx >= MIN_WHALE_AMOUNT) {
     const price = await getCachedStxPrice();
     const usdAmount = price ? (amountStx * price).toFixed(2) : '-';
-    const message = `${classifyTransaction} Alert! 🚨\n\n#Stacks #STX Transfer: ${amountStx.toFixed(2)} STX ($${usdAmount})\nTx: https://explorer.stacks.co/txid/${txId}`;
+    const classification = classifyTransaction(amountStx);
+    const message = `${classification} Alert! 🚨\n\n#Stacks #STX Transfer: ${amountStx.toFixed(2)} STX ($${usdAmount})\nTx: https://explorer.stacks.co/txid/${txId}`;
 
     await sendTwitterAndTelegram(message);
   }
