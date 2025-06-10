@@ -86,6 +86,15 @@ const sendTwitterAndTelegram = async (message) => {
   }
 };
 
+const classifyTransaction = (amountStx) => {
+  if (amountStx >= 500_000) return '🐳 Mega Whale';
+  if (amountStx >= 250_000) return '🐋 Humpback Whale';
+  if (amountStx >= 100_000) return '🦈 Shark';
+  if (amountStx >= 50_000) return '🐬 Dolphin';
+
+  return '🐠 Fish';
+};
+
 const processTransaction = async (tx) => {
   const txId = tx.tx_id;
   if (seenTx.has(txId)) return;
@@ -95,7 +104,7 @@ const processTransaction = async (tx) => {
   if (amountStx >= MIN_WHALE_AMOUNT) {
     const price = await getCachedStxPrice();
     const usdAmount = price ? (amountStx * price).toFixed(2) : '-';
-    const message = `🐳 Whale Alert! 🚨\n\n#Stacks #STX Transfer: ${amountStx.toFixed(2)} STX ($${usdAmount})\nTx: https://explorer.stacks.co/txid/${txId}`;
+    const message = `${classification} Alert! 🚨\n\n#Stacks #STX Transfer: ${amountStx.toFixed(2)} STX ($${usdAmount})\nTx: https://explorer.stacks.co/txid/${txId}`;
 
     await sendTwitterAndTelegram(message);
   }
