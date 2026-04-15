@@ -19,7 +19,7 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const MIN_WHALE_AMOUNT = 100000; // STX
 
 // APIs
-const STACKS_API_URL = 'https://api.hiro.so/extended/v1/tx?unanchored=true&sort=desc';
+const STACKS_API_URL = 'https://api.hiro.so/extended/v1/tx?unanchored=true&sort=desc&type=token_transfer';
 
 // Seen transactions
 const seenTx = new Set();
@@ -126,9 +126,15 @@ const processTransaction = async (tx) => {
   const txId = tx.tx_id;
   if (seenTx.has(txId)) return;
 
-  const amountStx = (tx?.token_transfer?.amount || 0) / 1e6;
-  const sender = tx.token_transfer.sender_address;
-  const recipient = tx.token_transfer.recipient_address;
+  const transfer = tx?.token_transfer;
+  if (!transfer?.sender_address || !transfer?.recipient_address) {
+    seenTx.add(txId);
+    return;
+  }
+
+  const amountStx = (transfer.amount || 0) / 1e6;
+  const sender = transfer.sender_address;
+  const recipient = transfer.recipient_address;
 
   if (amountStx >= MIN_WHALE_AMOUNT) {
     const [price, senderName, recipientName] = await Promise.all([
