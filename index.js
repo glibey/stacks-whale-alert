@@ -1,6 +1,8 @@
 import axios from 'axios';
 import 'dotenv/config';
 import { TwitterApi } from 'twitter-api-v2';
+import { generateWhaleAlertImage } from './lib/image-generator.js';
+import fs from 'fs';
 
 // Twitter API
 const twitterClient = new TwitterApi({
@@ -59,11 +61,20 @@ const getCachedStxPrice = async () => {
   return cachedPrice;
 };
 
-const sendTwitterAndTelegram = async (message) => {
+const sendTwitterAndTelegram = async (message, imagePath = null) => {
   // Twitter
   try {
-    await twitterClient.v2.tweet(message);
-    console.log(message);
+    if (imagePath) {
+      console.log('Uploading media to Twitter...');
+      const mediaId = await twitterClient.v1.uploadMedia(imagePath);
+      await twitterClient.v2.tweet({
+        text: message,
+        media: { media_ids: [mediaId] }
+      });
+    } else {
+      await twitterClient.v2.tweet(message);
+    }
+    console.log('Tweeted successfully');
   } catch (err) {
     console.error('Error posting tweet:', err.message);
   }
@@ -81,9 +92,41 @@ const sendTwitterAndTelegram = async (message) => {
     } catch (err) {
       console.error('Error posting Telegram message:', err.message);
     }
-  } else {
-    console.warn('Telegram credentials not configured.');
   }
+
+  // Cleanup image
+  if (imagePath && fs.existsSync(imagePath)) {
+    fs.unlinkSync(imagePath);
+  }
+};
+
+// Known Addresses mapping
+const knownLabels = {
+  'SP000000000000000000002Q6VF78': 'Stacks Protocol',
+  'SP1P72Z3704V2FEKBWRFM27M8MRWP240J05W6WRE': 'Binance',
+  'SP2788M6S8Y39NZZS0VTM1S7M9F9D67T5E7B78GNB': 'OKX',
+  // Add more as needed
+};
+
+const resolveBnsName = async (address) => {
+  if (knownLabels[address]) return knownLabels[address];
+  try {
+    const { data } = await axios.get(`https://api.hiro.so/v1/addresses/stacks/${address}/names`);
+    if (data.names && data.names.length > 0) {
+      return data.names[0]; // Returns the first registered name
+    }
+  } catch (err) {
+    // Silently fail
+  }
+  return null;
+};
+
+const classifyTransaction = (amountStx) => {
+  if (amountStx >= 500_000) return '🐳 Mega Whale';
+  if (amountStx >= 250_000) return '🐋 Humpback Whale';
+  if (amountStx >= 100_000) return '🦈 Shark';
+  if (amountStx >= 50_000) return '🐬 Dolphin';
+  return '🐠 Fish';
 };
 
 const processTransaction = async (tx) => {
@@ -91,13 +134,39 @@ const processTransaction = async (tx) => {
   if (seenTx.has(txId)) return;
 
   const amountStx = (tx?.token_transfer?.amount || 0) / 1e6;
+  const sender = tx.token_transfer.sender_address;
+  const recipient = tx.token_transfer.recipient_address;
 
   if (amountStx >= MIN_WHALE_AMOUNT) {
-    const price = await getCachedStxPrice();
-    const usdAmount = price ? (amountStx * price).toFixed(2) : '-';
-    const message = `🐳 Whale Alert! 🚨\n\n#Stacks #STX Transfer: ${amountStx.toFixed(2)} STX ($${usdAmount})\nTx: https://explorer.stacks.co/txid/${txId}`;
+    const [price, senderName, recipientName] = await Promise.all([
+      getCachedStxPrice(),
+      resolveBnsName(sender),
+      resolveBnsName(recipient)
+    ]);
 
-    await sendTwitterAndTelegram(message);
+    const usdAmount = price ? (amountStx * price).toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : '-';
+    const classification = classifyTransaction(amountStx);
+
+    const senderDisplay = senderName ? `${senderName} (${sender.slice(0, 6)}...${sender.slice(-4)})` : `${sender.slice(0, 6)}...${sender.slice(-4)}`;
+    const recipientDisplay = recipientName ? `${recipientName} (${recipient.slice(0, 6)}...${recipient.slice(-4)})` : `${recipient.slice(0, 6)}...${recipient.slice(-4)}`;
+
+    const message = `${classification} Alert! 🚨\n\n💰 ${amountStx.toLocaleString()} #STX (${usdAmount})\n\n📤 From: ${senderDisplay}\n📥 To: ${recipientDisplay}\n\n🔗 Explorer: https://explorer.stacks.co/txid/${txId}`;
+
+    // Generate Visual Image
+    let imagePath = null;
+    try {
+      imagePath = await generateWhaleAlertImage({
+        amount: amountStx,
+        classification,
+        usdAmount,
+        sender: senderName || `${sender.slice(0, 8)}...`,
+        recipient: recipientName || `${recipient.slice(0, 8)}...`,
+      });
+    } catch (err) {
+      console.error('Error generating image:', err.message);
+    }
+
+    await sendTwitterAndTelegram(message, imagePath);
   }
 
   seenTx.add(txId);
