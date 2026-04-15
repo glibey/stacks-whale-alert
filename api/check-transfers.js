@@ -19,7 +19,7 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const MIN_WHALE_AMOUNT = 100000; // STX
 
 // APIs
-const STACKS_API_URL = 'https://api.mainnet.hiro.so/extended/v1/tx?unanchored=true&order=desc&type=token_transfer';
+const STACKS_API_URL = 'https://api.hiro.so/extended/v1/tx/';
 
 // Seen transactions
 const seenTx = new Set();
@@ -122,6 +122,40 @@ const classifyTransaction = (amountStx) => {
   return '🐠 Fish';
 };
 
+const fetchRecentTransactions = async () => {
+  const attempts = [
+    { limit: 20, unanchored: false },
+    { limit: 10, unanchored: false },
+    { limit: 10, unanchored: true },
+  ];
+
+  for (const attempt of attempts) {
+    try {
+      const { data } = await axios.get(STACKS_API_URL, {
+        params: {
+          type: 'token_transfer',
+          order: 'desc',
+          sort_by: 'block_height',
+          exclude_function_args: true,
+          limit: attempt.limit,
+          unanchored: attempt.unanchored,
+        },
+      });
+      return data.results || [];
+    } catch (err) {
+      const status = err.response?.status;
+      const code = err.response?.data?.code;
+      console.error('Error fetching transactions:', status, err.response?.data || err.message);
+
+      if (!(status === 500 && code === '57014')) {
+        throw err;
+      }
+    }
+  }
+
+  throw new Error('Hiro recent transactions API timed out for all retry attempts');
+};
+
 const processTransaction = async (tx) => {
   const txId = tx.tx_id;
   if (seenTx.has(txId)) return;
@@ -171,8 +205,7 @@ const processTransaction = async (tx) => {
 
 const fetchTransfers = async () => {
   try {
-    const { data } = await axios.get(`${STACKS_API_URL}&limit=50`);
-    const transactions = data.results || [];
+    const transactions = await fetchRecentTransactions();
     await Promise.all(transactions.map(processTransaction));
   } catch (err) {
     console.error('Error fetching transactions:', err.response?.status, err.response?.data || err.message);

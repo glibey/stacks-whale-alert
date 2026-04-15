@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "check:api": "node scripts/check-api-check-transfers.js",
     "demo:image": "node scripts/generate-demo.js",
     "demo:send": "node scripts/send-demo.js",
     "test": "echo \"Error: no test specified\" && exit 1"
