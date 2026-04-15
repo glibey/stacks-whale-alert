@@ -19,7 +19,7 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const MIN_WHALE_AMOUNT = 100000; // STX
 
 // APIs
-const STACKS_API_URL = 'https://api.hiro.so/extended/v1/tx?unanchored=true&sort=desc&type=token_transfer';
+const STACKS_API_URL = 'https://api.hiro.so/extended/v1/tx/?unanchored=true&order=desc&type=token_transfer';
 
 // Seen transactions
 const seenTx = new Set();
@@ -175,7 +175,7 @@ const fetchTransfers = async () => {
     const transactions = data.results || [];
     await Promise.all(transactions.map(processTransaction));
   } catch (err) {
-    console.error('Error fetching transactions:', err.message);
+    console.error('Error fetching transactions:', err.response?.status, err.response?.data || err.message);
   }
 };
 
