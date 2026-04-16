@@ -7,7 +7,9 @@ import {
   History,
   Loader2,
   FlaskConical,
-  RefreshCcw
+  RefreshCcw,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -20,6 +22,7 @@ import { demoTransactions, demoMetrics, demoChartData, demoAlert } from '../../l
 
 const STACKS_API_BASE = 'https://api.hiro.so';
 const DEMO_SEARCH_PARAM = 'demo';
+const THEME_STORAGE_KEY = 'stx-whale-theme';
 
 const classify = (amt) => {
   if (amt >= 500000) return { label: 'Mega Whale', icon: '🐳' };
@@ -37,12 +40,37 @@ const formatCompactAddress = (value) => {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 };
 
+const formatTransactionTime = (timestamp, timestampIso) => {
+  const source = timestampIso || (timestamp ? new Date(timestamp * 1000).toISOString() : null);
+  if (source) {
+    return new Intl.DateTimeFormat('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(new Date(source));
+  }
+  return 'Time unavailable';
+};
+
 function App() {
   const [transactions, setTransactions] = useState([]);
   const [stxPrice, setStxPrice] = useState({ price: demoMetrics.price, change: demoMetrics.change });
   const [loading, setLoading] = useState(true);
   const [demoMode, setDemoMode] = useState(() => new URLSearchParams(window.location.search).get(DEMO_SEARCH_PARAM) === '1');
   const [error, setError] = useState('');
+  const [theme, setTheme] = useState(() => {
+    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+    if (storedTheme === 'light' || storedTheme === 'dark') return storedTheme;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  }, [theme]);
 
   const applyDemoState = () => {
     setTransactions(demoTransactions);
@@ -63,10 +91,11 @@ function App() {
           amount,
           sender: tx.token_transfer?.sender_address || tx.sender_address,
           recipient: tx.token_transfer?.recipient_address || 'Contract/Unknown',
-          timestamp: tx.burn_block_time,
+          timestamp: tx.block_time,
+          timestampIso: tx.block_time_iso,
           classification: classify(amount),
         };
-      });
+      }).filter((tx) => tx.classification.label !== 'Regular Transfer');
 
       setTransactions(enhancedTransfers.slice(0, 15));
       setError('');
@@ -121,14 +150,22 @@ function App() {
     setDemoMode(nextMode);
   };
 
+  const toggleTheme = () => {
+    setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'));
+  };
+
   return (
     <div className="dashboard-container">
       <header className="header">
         <div className="logo">
-          <Activity size={32} color="#3b82f6" />
+          <Activity size={32} className="brand-icon" />
           STX<span>Whale</span>Alert 
         </div>
         <div className="header-actions">
+          <button type="button" className="theme-toggle" onClick={toggleTheme}>
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            {theme === 'dark' ? 'Light Theme' : 'Dark Theme'}
+          </button>
           <button type="button" className={`demo-toggle ${demoMode ? 'active' : ''}`} onClick={toggleDemoMode}>
             {demoMode ? <RefreshCcw size={16} /> : <FlaskConical size={16} />}
             {demoMode ? 'Back To Live Feed' : 'Open Demo Mode'}
@@ -176,8 +213,8 @@ function App() {
 
       <div className="main-grid">
         <div className="whale-feed">
-          <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-            {loading ? <Loader2 className="animate-spin" size={24} /> : <History size={24} />}
+          <h2 className="section-heading">
+            {loading ? <Loader2 className="section-heading-icon animate-spin" size={24} /> : <History className="section-heading-icon" size={24} />}
             {demoMode ? 'Demo Whale Feed' : 'Recent Transactions'}
           </h2>
           
@@ -205,6 +242,15 @@ function App() {
                     <ArrowUpRight size={14} />
                     <span>To: {formatCompactAddress(tx.recipient)}</span>
                   </div>
+                  <div className="item-time">{formatTransactionTime(tx.timestamp, tx.timestampIso)}</div>
+                  <a
+                    className="item-link"
+                    href={`https://explorer.hiro.so/txid/${tx.id}?chain=mainnet`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    View transaction
+                  </a>
                 </div>
                 <div className="item-amount">
                   <div className="amount-stx">{tx.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })} STX</div>
