@@ -1,12 +1,13 @@
 import 'dotenv/config';
 import axios from 'axios';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { TwitterApi } from 'twitter-api-v2';
 import { demoAlert, buildDemoMessage } from '../lib/demo-data.js';
 import { generateWhaleAlertImage } from '../lib/image-generator.js';
 
-const OUTPUT_PATH = path.join(process.cwd(), 'demo-whale-alert.png');
+const OUTPUT_PATH = path.join(os.tmpdir(), 'demo-whale-alert.png');
 
 const requiredEnv = [
   'TWITTER_API_KEY',
