@@ -1,8 +1,9 @@
 import 'dotenv/config';
+import { getMinWhaleAmount } from './lib/config.js';
 import { createWhaleAlertService } from './lib/whale-alert-service.js';
 
 const { fetchTransfers } = createWhaleAlertService({
-  minWhaleAmount: 100000,
+  minWhaleAmount: getMinWhaleAmount(),
 });
 
 // Scheduler

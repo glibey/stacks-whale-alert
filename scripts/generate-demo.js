@@ -1,8 +1,9 @@
+import os from 'os';
 import path from 'path';
 import { demoAlert, buildDemoMessage } from '../lib/demo-data.js';
 import { generateWhaleAlertImage } from '../lib/image-generator.js';
 
-const outputPath = path.join(process.cwd(), 'demo-whale-alert.png');
+const outputPath = path.join(os.tmpdir(), 'demo-whale-alert.png');
 
 const run = async () => {
   const imagePath = await generateWhaleAlertImage({

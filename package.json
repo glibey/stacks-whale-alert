@@ -8,13 +8,14 @@
     "check:api": "node scripts/check-api-check-transfers.js",
     "demo:image": "node scripts/generate-demo.js",
     "demo:send": "node scripts/send-demo.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "axios": "^1.9.0",
     "canvas": "^3.2.3",
     "dotenv": "^16.5.0",
