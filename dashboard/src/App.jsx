@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useEffectEvent } from 'react';
 import axios from 'axios';
 import { 
   Activity, 
@@ -20,22 +20,13 @@ import {
 import './App.css';
 import { demoTransactions, demoMetrics, demoChartData, demoAlert } from '../../lib/demo-data.js';
 
-const STACKS_API_BASE = 'https://api.hiro.so';
 const DEMO_SEARCH_PARAM = 'demo';
 const THEME_STORAGE_KEY = 'stx-whale-theme';
-
-const classify = (amt) => {
-  if (amt >= 500000) return { label: 'Mega Whale', icon: '🐳' };
-  if (amt >= 250000) return { label: 'Humpback Whale', icon: '🐋' };
-  if (amt >= 100000) return { label: 'Whale', icon: '🦈' };
-  if (amt >= 50000) return { label: 'Shark', icon: '🦈' };
-  if (amt >= 5000) return { label: 'Dolphin', icon: '🐬' };
-  return { label: 'Regular Transfer', icon: '🐠' };
-};
 
 const formatCompactAddress = (value) => {
   if (!value) return 'Unknown';
   const address = String(value);
+  if (address.includes(' ') || address.includes('(')) return address;
   if (address.length <= 14) return address;
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 };
@@ -76,51 +67,38 @@ function App() {
     setTransactions(demoTransactions);
     setStxPrice({ price: demoMetrics.price, change: demoMetrics.change });
     setLoading(false);
-    setError('');
   };
 
-  const fetchTransfers = async () => {
+  const fetchDashboard = useEffectEvent(async () => {
     try {
-      const { data } = await axios.get(`${STACKS_API_BASE}/extended/v1/tx?unanchored=true&sort=desc&limit=50&type=token_transfer`);
-      const results = data.results || [];
-      
-      const enhancedTransfers = results.map((tx) => {
-        const amount = (tx.token_transfer?.amount || 0) / 1e6;
-        return {
-          id: tx.tx_id,
-          amount,
-          sender: tx.token_transfer?.sender_address || tx.sender_address,
-          recipient: tx.token_transfer?.recipient_address || 'Contract/Unknown',
-          timestamp: tx.block_time,
-          timestampIso: tx.block_time_iso,
-          classification: classify(amount),
-        };
-      }).filter((tx) => tx.classification.label !== 'Regular Transfer');
+      const { data } = await axios.get('/api/dashboard');
+      setTransactions(data.transactions || []);
 
-      setTransactions(enhancedTransfers.slice(0, 15));
-      setError('');
-      setLoading(false);
-    } catch (err) {
-      console.error('Error fetching transfers:', err);
-      setError('Live feed unavailable. Showing demo alert data.');
-      applyDemoState();
-    }
-  };
-
-  const fetchPrice = async () => {
-    try {
-      const { data } = await axios.get('https://api.binance.com/api/v3/ticker/24hr?symbol=STXUSDT');
-      setStxPrice({
-        price: parseFloat(data.lastPrice),
-        change: parseFloat(data.priceChangePercent)
-      });
-    } catch (err) {
-      console.error('Price fetch failed:', err);
-      if (!demoMode) {
+      if (data.price) {
+        setStxPrice({
+          price: Number(data.price.price) || demoMetrics.price,
+          change: Number(data.price.change) || 0,
+        });
+      } else {
         setStxPrice({ price: demoMetrics.price, change: demoMetrics.change });
       }
+
+      if (data.source === 'alerts') {
+        setError(data.transactions?.length ? 'Showing stored alerts while the live feed refreshes.' : 'Live feed has no recent whale activity yet.');
+      } else if (data.warnings?.includes('price_unavailable')) {
+        setError('Price feed unavailable. Whale activity is still live.');
+      } else {
+        setError('');
+      }
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      applyDemoState();
+      setError('Dashboard feed unavailable. Showing demo alert data.');
+      return;
+    } finally {
+      setLoading(false);
     }
-  };
+  });
 
   useEffect(() => {
     if (demoMode) {
@@ -128,9 +106,8 @@ function App() {
       return undefined;
     }
 
-    fetchTransfers();
-    fetchPrice();
-    const interval = setInterval(fetchTransfers, 30000);
+    fetchDashboard();
+    const interval = setInterval(fetchDashboard, 30000);
     return () => clearInterval(interval);
   }, [demoMode]);
 
@@ -153,6 +130,8 @@ function App() {
   const toggleTheme = () => {
     setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'));
   };
+
+  const MotionDiv = motion.div;
 
   return (
     <div className="dashboard-container">
@@ -182,33 +161,40 @@ function App() {
       {(demoMode || error) && (
         <section className="demo-banner">
           <div>
-            <div className="demo-badge">{demoMode ? 'Demo Mode' : 'Demo Fallback'}</div>
-            <strong>{demoAlert.classification}</strong> sample alert for {demoAlert.amount.toLocaleString()} STX.
+            <div className="demo-badge">{demoMode ? 'Demo Mode' : 'Live Status'}
+            </div>
+            {demoMode ? (
+              <>
+                <strong>{demoAlert.classification}</strong> sample alert for {demoAlert.amount.toLocaleString()} STX.
+              </>
+            ) : (
+              <strong>{error}</strong>
+            )}
           </div>
           <div className="demo-banner-meta">
-            From {demoAlert.sender} to {demoAlert.recipient}
+            {demoMode ? `From ${demoAlert.sender} to ${demoAlert.recipient}` : error}
           </div>
         </section>
       )}
 
       <section className="stats-grid">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card">
+        <MotionDiv initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card">
           <div className="card-title">Live STX Price</div>
           <div className="card-value">${stxPrice.price.toLocaleString()}</div>
           <div className="card-delta plus">{demoMode ? 'Demo Snapshot' : 'Real-time Feed'}</div>
-        </motion.div>
+        </MotionDiv>
         
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card">
+        <MotionDiv initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card">
           <div className="card-title">24h Volume</div>
           <div className="card-value">${(demoMetrics.dailyVolumeUsd / 1_000_000).toFixed(1)}M</div>
           <div className="card-delta plus">Stacks transfer activity</div>
-        </motion.div>
+        </MotionDiv>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="card">
+        <MotionDiv initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="card">
           <div className="card-title">Total Whales Active</div>
           <div className="card-value">{demoMetrics.activeWhales}</div>
           <div className="card-delta minus">Large wallet clusters</div>
-        </motion.div>
+        </MotionDiv>
       </section>
 
       <div className="main-grid">
@@ -225,8 +211,8 @@ function App() {
           )}
 
           <AnimatePresence mode="popLayout">
-            {transactions.map((tx, i) => (
-              <motion.div 
+            {transactions.map((tx) => (
+              <MotionDiv 
                 key={tx.id}
                 initial={{ opacity: 0, x: -25 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -256,7 +242,7 @@ function App() {
                   <div className="amount-stx">{tx.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })} STX</div>
                   <div className="amount-usd">≈ ${(tx.amount * stxPrice.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
                 </div>
-              </motion.div>
+              </MotionDiv>
             ))}
           </AnimatePresence>
         </div>
