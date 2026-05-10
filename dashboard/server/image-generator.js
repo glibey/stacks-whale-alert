@@ -5,6 +5,15 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 
 const FONT_FAMILY = 'WhaleAlertSans';
+const FALLBACK_FONT_STACK = [
+  FONT_FAMILY,
+  'Arial',
+  'Helvetica',
+  'DejaVu Sans',
+  'Liberation Sans',
+  'Noto Sans',
+  'sans-serif',
+].map((family) => (family === 'sans-serif' ? family : `'${family}'`)).join(', ');
 const fontPaths = {
   regular: [
     '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
@@ -25,7 +34,6 @@ const fontPaths = {
 };
 
 let fontsRegistered = false;
-let hasRegisteredFontFamily = false;
 
 const registerFirstAvailableFont = (candidates, weight) => {
   const fontPath = candidates.find((candidate) => fs.existsSync(candidate));
@@ -33,8 +41,13 @@ const registerFirstAvailableFont = (candidates, weight) => {
     return false;
   }
 
-  registerFont(fontPath, { family: FONT_FAMILY, weight });
-  return true;
+  try {
+    registerFont(fontPath, { family: FONT_FAMILY, weight });
+    return true;
+  } catch (error) {
+    console.warn(`[image] Failed to register font ${fontPath}: ${error.message}`);
+    return false;
+  }
 };
 
 const ensureFontsRegistered = () => {
@@ -44,18 +57,16 @@ const ensureFontsRegistered = () => {
 
   const regularRegistered = registerFirstAvailableFont(fontPaths.regular, 'normal');
   const boldRegistered = registerFirstAvailableFont(fontPaths.bold, 'bold');
-  hasRegisteredFontFamily = regularRegistered || boldRegistered;
 
-  if (!hasRegisteredFontFamily) {
-    console.warn('[image] No explicit font file found, falling back to canvas sans-serif');
+  if (!regularRegistered && !boldRegistered) {
+    console.warn('[image] No explicit font file found, falling back to system sans-serif font stack');
   }
 
   fontsRegistered = true;
 };
 
-const fontFamily = () => (hasRegisteredFontFamily ? `'${FONT_FAMILY}', sans-serif` : 'sans-serif');
 const setFont = (ctx, size, weight = 'normal') => {
-  ctx.font = `${weight} ${size}px ${fontFamily()}`;
+  ctx.font = `${weight} ${size}px ${FALLBACK_FONT_STACK}`;
 };
 
 export const generateWhaleAlertImage = async (data) => {
