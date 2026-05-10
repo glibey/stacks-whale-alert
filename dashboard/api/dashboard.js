@@ -2,7 +2,7 @@ import axios from 'axios';
 import { createStore } from '../server/store.js';
 
 const STACKS_API_URL = 'https://api.hiro.so/extended/v1/tx';
-const BINANCE_TICKER_URL = 'https://api.binance.com/api/v3/ticker/24hr?symbol=STXUSDT';
+const CMC_QUOTES_URL = 'https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest';
 
 const classify = (amount) => {
   if (amount >= 500000) return { label: 'Mega Whale', icon: '🐳' };
@@ -67,10 +67,22 @@ const mapAlert = (alert) => {
 };
 
 const fetchPrice = async () => {
-  const { data } = await axios.get(BINANCE_TICKER_URL, { timeout: 10000 });
+  const { data } = await axios.get(CMC_QUOTES_URL, {
+    timeout: 10000,
+    params: { symbol: 'STX' },
+    headers: {
+      'X-CMC_PRO_API_KEY': process.env.COINMARKETCAP_API_KEY,
+    },
+  });
+
+  const stxData = data?.data?.STX;
+  const priceObj = Array.isArray(stxData)
+    ? stxData.find((item) => item.slug === 'stacks' && item.symbol === 'STX')
+    : stxData;
+
   return {
-    price: Number.parseFloat(data.lastPrice),
-    change: Number.parseFloat(data.priceChangePercent),
+    price: Number(priceObj?.quote?.USD?.price) || null,
+    change: Number(priceObj?.quote?.USD?.percent_change_24h) || 0,
   };
 };
 

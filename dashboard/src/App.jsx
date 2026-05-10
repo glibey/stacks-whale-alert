@@ -47,10 +47,15 @@ const formatTransactionTime = (timestamp, timestampIso) => {
 };
 
 function App() {
+  const initialDemoMode = new URLSearchParams(window.location.search).get(DEMO_SEARCH_PARAM) === '1';
   const [transactions, setTransactions] = useState([]);
-  const [stxPrice, setStxPrice] = useState({ price: demoMetrics.price, change: demoMetrics.change });
+  const [stxPrice, setStxPrice] = useState(() => (
+    initialDemoMode
+      ? { price: demoMetrics.price, change: demoMetrics.change }
+      : { price: null, change: 0 }
+  ));
   const [loading, setLoading] = useState(true);
-  const [demoMode, setDemoMode] = useState(() => new URLSearchParams(window.location.search).get(DEMO_SEARCH_PARAM) === '1');
+  const [demoMode, setDemoMode] = useState(() => initialDemoMode);
   const [error, setError] = useState('');
   const [theme, setTheme] = useState(() => {
     const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
@@ -76,11 +81,11 @@ function App() {
 
       if (data.price) {
         setStxPrice({
-          price: Number(data.price.price) || demoMetrics.price,
+          price: Number(data.price.price) || null,
           change: Number(data.price.change) || 0,
         });
       } else {
-        setStxPrice({ price: demoMetrics.price, change: demoMetrics.change });
+        setStxPrice((currentPrice) => ({ price: currentPrice.price, change: 0 }));
       }
 
       if (data.source === 'alerts') {
@@ -150,7 +155,7 @@ function App() {
             {demoMode ? 'Back To Live Feed' : 'Open Demo Mode'}
           </button>
           <div className="card-value" style={{ fontSize: '1.25rem' }}>
-            ${stxPrice.price.toFixed(3)} 
+            {stxPrice.price == null ? 'Price N/A' : `$${stxPrice.price.toFixed(3)}`}
             <span className={`card-delta ${stxPrice.change >= 0 ? 'plus' : 'minus'}`} style={{ marginLeft: '1rem' }}>
               {stxPrice.change >= 0 ? '+' : ''}{stxPrice.change.toFixed(2)}%
             </span>
@@ -180,7 +185,7 @@ function App() {
       <section className="stats-grid">
         <MotionDiv initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card">
           <div className="card-title">Live STX Price</div>
-          <div className="card-value">${stxPrice.price.toLocaleString()}</div>
+          <div className="card-value">{stxPrice.price == null ? 'N/A' : `$${stxPrice.price.toLocaleString()}`}</div>
           <div className="card-delta plus">{demoMode ? 'Demo Snapshot' : 'Real-time Feed'}</div>
         </MotionDiv>
         
@@ -240,7 +245,11 @@ function App() {
                 </div>
                 <div className="item-amount">
                   <div className="amount-stx">{tx.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })} STX</div>
-                  <div className="amount-usd">≈ ${(tx.amount * stxPrice.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                  <div className="amount-usd">
+                    {stxPrice.price == null
+                      ? '≈ Price unavailable'
+                      : `≈ $${(tx.amount * stxPrice.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+                  </div>
                 </div>
               </MotionDiv>
             ))}
